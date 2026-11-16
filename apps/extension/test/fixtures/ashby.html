@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Product Analyst at Northstar</title>
+  </head>
+  <body>
+    <h1>Product Analyst</h1>
+    <div class="location">Portland, OR</div>
+    <form class="ashby-application-form">
+      <label for="name">Name*</label>
+      <input id="name" name="_systemfield_name" />
+      <label for="email">Email*</label>
+      <input id="email" type="email" />
+      <label for="phone">Phone</label>
+      <input id="phone" />
+      <label for="resume">Resume*</label>
+      <input id="resume" type="file" />
+      <fieldset>
+        <legend>Are you legally authorized to work in the United States?*</legend>
+        <button type="button">Yes</button>
+        <button type="button">No</button>
+      </fieldset>
+      <div>
+        <label id="sponsor-label">Will you now or in the future require sponsorship?</label>
+        <button type="button" aria-haspopup="listbox" aria-labelledby="sponsor-label">Select</button>
+        <div role="listbox">
+          <div role="option">Yes</div>
+          <div role="option">No</div>
+        </div>
+      </div>
+      <label for="why">Why this role?*</label>
+      <textarea id="why" required></textarea>
+      <button type="submit">Submit Application</button>
+    </form>
+  </body>
+</html>

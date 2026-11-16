@@ -1,0 +1,9 @@
+node_modules
+pnpm-lock.yaml
+.next
+.output
+.wxt
+dist
+coverage
+apps-script
+*.sql

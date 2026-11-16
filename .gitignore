@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next
+.next/
+out/
+
+# wxt / extension build
+.output/
+.wxt/
+stats.html
+
+# env and secrets
+.env
+.env.*
+!.env.example
+
+# personal data — never commit
+profile.yaml
+resume.pdf
+
+# build / cache
+dist/
+*.tsbuildinfo
+.turbo/
+
+# vercel
+.vercel/
+
+# misc
+.DS_Store
+*.log
+coverage/

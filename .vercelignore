@@ -1,0 +1,17 @@
+node_modules
+**/.next
+**/.output
+**/.wxt
+.env
+.env.*
+**/.env
+**/.env.*
+profile.yaml
+resume.pdf
+*.pem
+.DS_Store
+coverage
+dist
+.turbo
+*.tsbuildinfo
+.vercel

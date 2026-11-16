@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Software Engineer at Acme</title>
+  </head>
+  <body>
+    <h1>Software Engineer</h1>
+    <div class="company-name">Acme</div>
+    <div class="location">Remote</div>
+    <form id="application_form">
+      <label for="first_name">First Name*</label>
+      <input id="first_name" name="job_application[first_name]" />
+      <label for="last_name">Last Name*</label>
+      <input id="last_name" />
+      <label for="email">Email*</label>
+      <input id="email" type="email" />
+      <label for="phone">Phone</label>
+      <input id="phone" />
+      <label for="linkedin">LinkedIn Profile</label>
+      <input id="linkedin" />
+      <label for="work_auth">Are you legally authorized to work in the United States?*</label>
+      <select id="work_auth" required>
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <div role="combobox" aria-label="Will you now or in the future require sponsorship?">
+        Select
+      </div>
+      <div role="listbox">
+        <div role="option">Yes</div>
+        <div role="option">No</div>
+      </div>
+      <label for="resume">Resume/CV*</label>
+      <input id="resume" type="file" />
+      <label for="mystery">Favorite snack*</label>
+      <input id="mystery" required />
+      <button type="submit">Submit application</button>
+    </form>
+    <script>
+      document.querySelectorAll('[role="option"]').forEach((option) => {
+        option.addEventListener('click', () => option.setAttribute('data-picked', 'true'));
+      });
+    </script>
+  </body>
+</html>

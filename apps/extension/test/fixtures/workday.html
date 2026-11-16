@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Software Engineer</title>
+  </head>
+  <body>
+    <div data-automation-id="jobPostingCompany">Acme</div>
+    <h1 data-automation-id="jobPostingHeader">Software Engineer</h1>
+    <div data-automation-id="locations">Portland</div>
+    <div data-automation-id="applyFlowPage">
+      <h2 data-automation-id="pageHeaderTitle">My Information</h2>
+      <div data-automation-id="formField-firstName">
+        <label for="first">First Name*</label>
+        <input id="first" data-automation-id="legalNameSection_firstName" />
+      </div>
+      <div data-automation-id="formField-lastName">
+        <label for="last">Last Name*</label>
+        <input id="last" data-automation-id="legalNameSection_lastName" />
+      </div>
+      <div data-automation-id="formField-email">
+        <label for="email">Email*</label>
+        <input id="email" type="email" />
+      </div>
+      <div data-automation-id="formField-phone">
+        <label for="phone">Phone Number</label>
+        <input id="phone" />
+      </div>
+      <div data-automation-id="formField-resume">
+        <label for="resume">Resume/CV</label>
+        <input id="resume" type="file" />
+      </div>
+      <button type="button" data-automation-id="pageFooterNextButton">Save and Continue</button>
+    </div>
+    <div data-automation-id="applyFlowPage" hidden>
+      <label for="address">Address*</label>
+      <input id="address" required />
+      <button type="button">Submit</button>
+    </div>
+  </body>
+</html>

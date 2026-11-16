@@ -1,0 +1,49 @@
+personal:
+  first_name: ''
+  last_name: ''
+  preferred_name: ''
+  email: ''
+  phone: ''
+  address_line1: ''
+  city: ''
+  state: ''
+  zip: ''
+  country: 'United States'
+links:
+  linkedin: ''
+  github: ''
+  portfolio: ''
+  website: ''
+work_auth:
+  authorized_us: true
+  needs_sponsorship_now: false
+  needs_sponsorship_future: false
+education:
+  - school: ''
+    degree: ''
+    major: ''
+    gpa: ''
+    start: '' # YYYY-MM
+    end: '' # YYYY-MM
+experience:
+  - company: ''
+    title: ''
+    location: ''
+    start: '' # YYYY-MM
+    end: '' # YYYY-MM or present
+    summary: ''
+preferences:
+  desired_salary: ''
+  earliest_start_date: ''
+  willing_to_relocate: false
+  remote_preference: '' # remote | hybrid | onsite | any
+eeo: # each value is a specific answer or "decline"
+  gender: 'decline'
+  race_ethnicity: 'decline'
+  hispanic_latino: 'decline'
+  veteran_status: 'decline'
+  disability_status: 'decline'
+common_answers:
+  how_did_you_hear: 'Company careers page'
+  cover_letter_default: ''
+resume_path: './resume.pdf'

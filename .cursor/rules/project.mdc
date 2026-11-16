@@ -1,0 +1,43 @@
+---
+description: Hard rules, stack, and supported application platforms
+alwaysApply: true
+---
+
+# Job application autofill + tracker
+
+Personal single-user system: a Chrome extension that fills forms, a Next.js tracker, and Gmail status updates. Build one phase at a time. At the end of a phase, summarize, list manual steps, and wait.
+
+## Hard rules
+
+- Never auto-submit. Do not click Submit, Apply, Next-to-submit, or any final button. Fill fields and highlight them only.
+- Never automate LinkedIn, Indeed, or other job boards. No content scripts, scraping, or clicking on linkedin.com or indeed.com. The extension runs only on the employer systems below.
+- No SSN, date of birth, passwords, or bank info in the profile, database, or code.
+- Gitignore `profile.yaml`, `resume.pdf`, `.env*`, and other secrets. Commit `profile.example.yaml` only.
+- Fill only fields matched with confidence. Leave uncertain fields empty and highlight them.
+
+## Stack
+
+- pnpm workspace: `apps/web`, `apps/extension`, `packages/shared`
+- Web: Next.js App Router, TypeScript, Tailwind, shadcn/ui, TanStack Table, Supabase (magic link). Service-role key stays on the server.
+- Extension: Chrome Manifest V3 with WXT. React only for popup and options. API calls go through the background script.
+- Shared: Zod schemas and types used by web and extension.
+- Email: `apps-script/Code.gs`, pasted into the user's Google account. No OAuth app verification.
+- Optional LLM is server-side only, behind `AI_ENABLED`. Everything must work with it off.
+- TypeScript strict. No `any` without a comment explaining why. One adapter per file.
+
+## Supported platforms (build order)
+
+1. Greenhouse — `boards.greenhouse.io`, `job-boards.greenhouse.io`, embedded `grnh.se` iframes
+2. Lever — `jobs.lever.co/*/apply`
+3. Ashby — `jobs.ashbyhq.com`
+4. Workday — `*.myworkdayjobs.com` (last). Fill only the visible step. Never click Save and Continue or Submit.
+5. Generic fallback — label-text matching only, when the user triggers autofill manually
+
+## Deploy reminder
+
+When the web app is deployed, remind the user to finish Gmail setup before treating email tracking as live. Google cannot call localhost.
+
+1. Paste `apps-script/Code.gs` into https://script.google.com.
+2. Set script properties `INGEST_URL` to `https://<deployment>/api/email-ingest` and `API_KEY` to a tracker API key.
+3. Run `install`, authorize Gmail, then run `scan`.
+4. Send a test email with subject `Thank you for applying to Acme` and confirm it shows on Review within 15 minutes, unless one open Acme application already matched it.
