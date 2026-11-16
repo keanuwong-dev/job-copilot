@@ -394,6 +394,15 @@ export function Tracker({
           <span className="line-clamp-1 max-w-56">{row.original.notes || '—'}</span>
         ),
       },
+      {
+        accessorKey: 'salary_range',
+        header: 'Salary',
+        cell: ({ row }) => (
+          <span className="block whitespace-nowrap text-right">
+            {row.original.salary_range || '—'}
+          </span>
+        ),
+      },
     ],
     [],
   );
@@ -736,6 +745,7 @@ function columnLabel(id: string): string {
     job_url: 'Link',
     tier: 'Label',
     notes: 'Notes',
+    salary_range: 'Salary',
   };
   return labels[id] ?? id;
 }
