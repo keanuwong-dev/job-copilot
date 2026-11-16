@@ -188,18 +188,28 @@ export function mountWidget(adapter: PlatformAdapter): void {
     saveBox.hidden = true;
   });
 
-  async function runFill() {
+  async function runFill(): Promise<{
+    ok: boolean;
+    filled: number;
+    attention: number;
+    error?: string;
+  }> {
     panelEl.hidden = false;
     summaryEl.textContent = 'Filling…';
     filling = true;
     try {
       const bundle = (await browser.runtime.sendMessage({ type: 'bundle' })) as Bundle;
       if (!bundle?.ok || !bundle.profile) {
-        summaryEl.textContent = bundle?.error ?? 'Import your profile in the extension options.';
-        return;
+        const error = bundle?.error ?? 'Import your profile in the extension options.';
+        summaryEl.textContent = error;
+        return { ok: false, filled: 0, attention: 0, error };
       }
       if (adapter.prepare) await adapter.prepare(document);
       const fields = adapter.findFields(document);
+      if (fields.length === 0) {
+        summaryEl.textContent = 'No fields found on this page.';
+        return { ok: true, filled: 0, attention: 0 };
+      }
       const report = await adapter.fill(fields, {
         profile: bundle.profile as Profile,
         answers: bundle.answers ?? [],
@@ -214,14 +224,26 @@ export function mountWidget(adapter: PlatformAdapter): void {
       if (used.length > 0) {
         void browser.runtime.sendMessage({ type: 'answers-used', used });
       }
+      return { ok: true, filled: report.filled, attention: report.attention };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not fill this page';
+      summaryEl.textContent = message;
+      return { ok: false, filled: 0, attention: 0, error: message };
     } finally {
       filling = false;
     }
   }
 
   browser.runtime.onMessage.addListener((message: { type?: string }, _sender, sendResponse) => {
-    if (message?.type === 'autofill') void runFill();
-    if (message?.type === 'open-log') panelEl.hidden = false;
+    if (message?.type === 'autofill') {
+      void runFill().then(sendResponse);
+      return true;
+    }
+    if (message?.type === 'open-log') {
+      panelEl.hidden = false;
+      sendResponse({ ok: true });
+      return true;
+    }
     if (message?.type === 'status') {
       sendResponse({ platform: adapter.id });
       return true;
@@ -252,6 +274,7 @@ async function log(
     applied_at: null,
     salary_range: null,
     notes: null,
+    tier: null,
   };
   fields.summary.textContent = 'Saving…';
   const result = (await browser.runtime.sendMessage({ type: 'log', application })) as {

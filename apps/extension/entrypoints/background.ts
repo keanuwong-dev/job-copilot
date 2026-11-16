@@ -43,7 +43,12 @@ async function handle(message: unknown) {
   if (type === 'bundle') {
     const settings = await readSettings();
     const answers = settings.apiKey
-      ? await listAnswers(settings.trackerUrl, settings.apiKey).catch(() => [])
+      ? await Promise.race([
+          listAnswers(settings.trackerUrl, settings.apiKey).catch(() => []),
+          new Promise<[]>(
+            (resolve) => setTimeout(() => resolve([]), 600),
+          ),
+        ])
       : [];
     return {
       ok: true,
@@ -130,25 +135,51 @@ async function runOnActiveTab(type: 'autofill' | 'open-log') {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab?.id == null || !tab.url) throw new Error('Open an application page first');
   if (isBlockedPage(tab.url)) throw new Error('LinkedIn and Indeed are not supported');
-  await ensureContentScript(tab.id);
-  const mounted = (await browser.tabs.sendMessage(tab.id, { type: 'mount-generic' })) as {
+  const frameId = await frameWithFields(tab.id);
+  await ensureContentScript(tab.id, frameId);
+  const mounted = (await browser.tabs.sendMessage(
+    tab.id,
+    { type: 'mount-generic' },
+    { frameId },
+  )) as { ok?: boolean; error?: string };
+  if (mounted?.ok === false) throw new Error(mounted.error ?? 'Could not open autofill');
+  const result = (await browser.tabs.sendMessage(tab.id, { type }, { frameId })) as {
     ok?: boolean;
     error?: string;
+    filled?: number;
+    attention?: number;
   };
-  if (mounted?.ok === false) throw new Error(mounted.error ?? 'Could not open autofill');
-  await browser.tabs.sendMessage(tab.id, { type });
-  return { ok: true };
+  if (result?.ok === false) return result;
+  return { ok: true, filled: result?.filled ?? 0, attention: result?.attention ?? 0 };
 }
 
-async function ensureContentScript(tabId: number): Promise<void> {
+async function frameWithFields(tabId: number): Promise<number> {
   try {
-    const ping = (await browser.tabs.sendMessage(tabId, { type: 'ping' })) as { ok?: boolean };
+    const frames = await browser.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: () =>
+        document.querySelectorAll('input:not([type="hidden"]), textarea, select').length,
+    });
+    const best = frames
+      .filter((frame) => typeof frame.result === 'number')
+      .sort((a, b) => Number(b.result) - Number(a.result))[0];
+    return best?.frameId ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function ensureContentScript(tabId: number, frameId: number): Promise<void> {
+  try {
+    const ping = (await browser.tabs.sendMessage(tabId, { type: 'ping' }, { frameId })) as {
+      ok?: boolean;
+    };
     if (ping?.ok) return;
   } catch {
-    // The page does not have the content script yet.
+    // This frame does not have the content script yet.
   }
   await browser.scripting.executeScript({
-    target: { tabId },
+    target: { tabId, frameIds: [frameId] },
     files: ['/content-scripts/content.js'],
   });
 }

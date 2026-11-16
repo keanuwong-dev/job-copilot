@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
   columnVisibilityFeature,
   createSortedRowModel,
@@ -20,7 +20,6 @@ import {
   applicationStats,
   TIERS,
   type AppStatus,
-  type ApplicationRowTone,
   type ApplicationStats,
   type Tier,
 } from '@job-tracker/shared';
@@ -43,6 +42,7 @@ import {
   platformLabel,
   STATUS_LABELS,
   STATUS_OPTION_CLASS,
+  STATUS_ROW_CLASS,
   TIER_LABELS,
 } from '@/components/labels';
 import { Button } from '@/components/ui/button';
@@ -94,26 +94,24 @@ type TrackerColumn = ColumnDef<typeof features, ApplicationRow>;
 type GroupMode = 'none' | 'tier' | 'color';
 
 const GROUP_HEADER: Record<string, string> = {
-  open: 'bg-[#cfe2f3] text-[#202124]',
-  interview: 'bg-white text-black',
-  live: 'bg-[#93c47d] text-[#202124]',
-  closed: 'bg-[#5f6368] text-white',
+  ...STATUS_ROW_CLASS,
   reach: 'bg-[#f8f9fa] text-[#202124]',
   target: 'bg-[#f8f9fa] text-[#202124]',
   volume: 'bg-[#f8f9fa] text-[#202124]',
   unset: 'bg-[#f8f9fa] text-[#5f6368]',
 };
 
-const COLOR_GROUPS: { id: string; label: string; statuses: AppStatus[] }[] = [
-  { id: 'open', label: 'Saved and applied', statuses: ['saved', 'applied'] },
-  { id: 'interview', label: 'Interview', statuses: ['interview'] },
-  { id: 'live', label: 'Assessment and offer', statuses: ['oa', 'offer'] },
-  { id: 'closed', label: 'Closed', statuses: ['rejected', 'ghosted', 'withdrawn'] },
-];
+const COLOR_GROUPS: { id: string; label: string; statuses: AppStatus[] }[] = APP_STATUSES.map(
+  (status) => ({
+    id: status,
+    label: STATUS_LABELS[status],
+    statuses: [status],
+  }),
+);
 
 function groupKey(row: ApplicationRow, mode: GroupMode): string {
   if (mode === 'tier') return row.tier ?? 'unset';
-  return COLOR_GROUPS.find((group) => group.statuses.includes(row.status))?.id ?? 'open';
+  return COLOR_GROUPS.find((group) => group.statuses.includes(row.status))?.id ?? 'applied';
 }
 
 function groupLabel(key: string, mode: GroupMode): string {
@@ -143,13 +141,6 @@ const SHEET_HEAD =
   'h-6 border border-[#dadce0] bg-[#f8f9fa] px-1.5 py-0 text-left text-[12px] font-medium text-[#5f6368]';
 const SHEET_CELL = 'h-6 border border-[#dadce0] px-1.5 py-0 text-[13px] leading-6';
 
-const SHEET_ROW: Record<ApplicationRowTone, string> = {
-  open: 'bg-[#cfe2f3] text-[#202124] group-hover:bg-[#bcd4ea] [&_a]:text-[#1155cc]',
-  live: 'bg-[#93c47d] text-[#202124] group-hover:bg-[#7fba68] [&_a]:text-[#1155cc]',
-  plain: 'bg-white text-black group-hover:bg-[#f1f3f4] [&_a]:text-[#1155cc]',
-  closed: 'bg-[#5f6368] text-white group-hover:bg-[#4a4e52] [&_a]:text-white [&_svg]:text-white',
-};
-
 export function Tracker({
   applications,
   events,
@@ -171,11 +162,44 @@ export function Tracker({
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [overrides, setOverrides] = useState<Record<string, Partial<ApplicationRow>>>({});
 
-  const stats = useMemo(() => applicationStats(applications, new Date(asOf)), [applications, asOf]);
+  const rows = useMemo(
+    () => applications.map((row) => (overrides[row.id] ? { ...row, ...overrides[row.id] } : row)),
+    [applications, overrides],
+  );
+
+  useEffect(() => {
+    setOverrides((current) => {
+      let changed = false;
+      const next: Record<string, Partial<ApplicationRow>> = {};
+      for (const [id, patch] of Object.entries(current)) {
+        const server = applications.find((row) => row.id === id);
+        if (!server) {
+          changed = true;
+          continue;
+        }
+        const kept: Partial<ApplicationRow> = { ...patch };
+        if (patch.status != null && server.status === patch.status) {
+          delete kept.status;
+          delete kept.last_activity_at;
+          changed = true;
+        }
+        if ('tier' in patch && server.tier === patch.tier) {
+          delete kept.tier;
+          changed = true;
+        }
+        if (Object.keys(kept).length > 0) next[id] = kept;
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [applications]);
+
+  const stats = useMemo(() => applicationStats(rows, new Date(asOf)), [rows, asOf]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return applications.filter((row) => {
+    return rows.filter((row) => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (!needle) return true;
       return [
@@ -193,7 +217,7 @@ export function Tracker({
         .toLowerCase()
         .includes(needle);
     });
-  }, [applications, query, statusFilter]);
+  }, [rows, query, statusFilter]);
 
   const tableData = useMemo(() => {
     const copy = [...filtered];
@@ -207,7 +231,7 @@ export function Tracker({
     return copy;
   }, [filtered, groupBy, sorting]);
 
-  const selected = applications.find((row) => row.id === selectedId) ?? null;
+  const selected = rows.find((row) => row.id === selectedId) ?? null;
   const selectedEvents = events.filter((event) => event.application_id === selectedId);
 
   function openRow(row: ApplicationRow) {
@@ -233,10 +257,23 @@ export function Tracker({
               value={row.original.tier ?? 'none'}
               onValueChange={(value) => {
                 const tier = !value || value === 'none' ? null : (value as Tier);
+                const id = row.original.id;
                 setError(null);
-                startTransition(async () => {
-                  const result = await updateTierAction(row.original.id, tier);
-                  if (!result.ok) setError(result.error);
+                setOverrides((current) => ({
+                  ...current,
+                  [id]: { ...current[id], tier },
+                }));
+                void updateTierAction(id, tier).then((result) => {
+                  if (result.ok) return;
+                  setOverrides((current) => {
+                    const next = { ...current };
+                    const patch = { ...next[id] };
+                    delete patch.tier;
+                    if (Object.keys(patch).length === 0) delete next[id];
+                    else next[id] = patch;
+                    return next;
+                  });
+                  setError(result.error);
                 });
               }}
             >
@@ -269,10 +306,29 @@ export function Tracker({
               value={row.original.status}
               onValueChange={(value) => {
                 if (!value) return;
+                const status = value as AppStatus;
+                const id = row.original.id;
                 setError(null);
-                startTransition(async () => {
-                  const result = await updateStatusAction(row.original.id, value as AppStatus);
-                  if (!result.ok) setError(result.error);
+                setOverrides((current) => ({
+                  ...current,
+                  [id]: {
+                    ...current[id],
+                    status,
+                    last_activity_at: new Date().toISOString(),
+                  },
+                }));
+                void updateStatusAction(id, status).then((result) => {
+                  if (result.ok) return;
+                  setOverrides((current) => {
+                    const next = { ...current };
+                    const patch = { ...next[id] };
+                    delete patch.status;
+                    delete patch.last_activity_at;
+                    if (Object.keys(patch).length === 0) delete next[id];
+                    else next[id] = patch;
+                    return next;
+                  });
+                  setError(result.error);
                 });
               }}
             >
@@ -552,7 +608,7 @@ export function Tracker({
                     onClick={() => openRow(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={cn(SHEET_CELL, SHEET_ROW[tone])}>
+                      <TableCell key={cell.id} className={cn(SHEET_CELL, STATUS_ROW_CLASS[tone])}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}

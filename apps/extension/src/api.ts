@@ -138,6 +138,7 @@ async function request(
 ): Promise<Response> {
   return fetch(`${trackerOrigin(trackerUrl)}${path}`, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(2000),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',

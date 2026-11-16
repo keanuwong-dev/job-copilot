@@ -68,18 +68,12 @@ describe('buildApplicationInsert', () => {
     });
   });
 
-  it('leaves applied_at empty for a saved application', () => {
-    const parsed = parseApplicationWrite({ company: 'Acme', role: 'Engineer', status: 'saved' });
-    if (!parsed.ok) throw new Error(parsed.error);
-    expect(buildApplicationInsert('user-1', parsed.value, now).applied_at).toBeNull();
-  });
 });
 
 describe('applicationStats', () => {
   it('counts applied work, this week, responses, interviews, and offers', () => {
     const stats = applicationStats(
       [
-        { status: 'saved', applied_at: null, created_at: '2026-11-10T12:00:00.000Z' },
         {
           status: 'applied',
           applied_at: '2026-11-09T12:00:00.000Z',
@@ -121,12 +115,7 @@ describe('applicationStats', () => {
     expect(stats.offers).toBe(1);
   });
 
-  it('has no response rate when everything is still saved', () => {
-    expect(
-      applicationStats(
-        [{ status: 'saved', applied_at: null, created_at: '2026-11-10T12:00:00.000Z' }],
-        now,
-      ).responseRate,
-    ).toBeNull();
+  it('has no response rate when there are no applications', () => {
+    expect(applicationStats([], now).responseRate).toBeNull();
   });
 });

@@ -1,36 +1,79 @@
 import type { AppStatus, Platform } from '@job-tracker/shared';
 import { PLATFORMS } from '@job-tracker/shared';
 
-const OPEN_STATUS =
-  'bg-[#cfe2f3] text-[#202124] focus:bg-[#bcd4ea] focus:text-[#202124] focus:**:text-[#202124] [&_svg]:text-current';
-const LIVE_STATUS =
-  'bg-[#93c47d] text-[#202124] focus:bg-[#7fba68] focus:text-[#202124] focus:**:text-[#202124] [&_svg]:text-current';
-const CLOSED_STATUS =
-  'bg-[#5f6368] text-white focus:bg-[#4a4e52] focus:text-white focus:**:text-white [&_svg]:text-current';
-const PLAIN_STATUS =
-  'bg-white text-black focus:bg-neutral-100 focus:text-black focus:**:text-black [&_svg]:text-current';
+const menu = (background: string, hover: string, text: string) =>
+  `${background} ${text} ${hover} focus:${hover.replace('hover:', '')} focus:${text} focus:**:${text} [&_svg]:text-current`;
+
+const APPLIED_MENU = menu(
+  'bg-[#cfe2f3]',
+  'hover:bg-[#bcd4ea]',
+  'text-[#202124]',
+);
+const ACTIVE_MENU = menu('bg-[#ffe599]', 'hover:bg-[#f1c232]', 'text-[#202124]');
+const OFFER_MENU = menu('bg-[#93c47d]', 'hover:bg-[#7fba68]', 'text-[#202124]');
+const GHOSTED_MENU = menu('bg-[#5f6368]', 'hover:bg-[#4a4e52]', 'text-white');
+const REJECTED_MENU = menu('bg-[#e06666]', 'hover:bg-[#cc4125]', 'text-white');
 
 /** Menu color for a status, matching the tracker row it produces. */
 export const STATUS_OPTION_CLASS: Record<AppStatus, string> = {
-  saved: OPEN_STATUS,
-  applied: OPEN_STATUS,
-  oa: LIVE_STATUS,
-  interview: PLAIN_STATUS,
-  offer: LIVE_STATUS,
-  rejected: CLOSED_STATUS,
-  ghosted: CLOSED_STATUS,
-  withdrawn: CLOSED_STATUS,
+  applied: APPLIED_MENU,
+  oa: ACTIVE_MENU,
+  interview: ACTIVE_MENU,
+  offer: OFFER_MENU,
+  ghosted: GHOSTED_MENU,
+  rejected: REJECTED_MENU,
+};
+
+const row = (background: string, hover: string, text: string, link: string) =>
+  `${background} ${text} ${hover} ${link}`;
+
+/** Sheet color for a tracker row. */
+export const STATUS_ROW_CLASS: Record<AppStatus, string> = {
+  applied: row(
+    'bg-[#cfe2f3]',
+    'group-hover:bg-[#bcd4ea]',
+    'text-[#202124]',
+    '[&_a]:text-[#1155cc]',
+  ),
+  oa: row(
+    'bg-[#ffe599]',
+    'group-hover:bg-[#f1c232]',
+    'text-[#202124]',
+    '[&_a]:text-[#1155cc]',
+  ),
+  interview: row(
+    'bg-[#ffe599]',
+    'group-hover:bg-[#f1c232]',
+    'text-[#202124]',
+    '[&_a]:text-[#1155cc]',
+  ),
+  offer: row(
+    'bg-[#93c47d]',
+    'group-hover:bg-[#7fba68]',
+    'text-[#202124]',
+    '[&_a]:text-[#1155cc]',
+  ),
+  ghosted: row(
+    'bg-[#5f6368]',
+    'group-hover:bg-[#4a4e52]',
+    'text-white',
+    '[&_a]:text-white [&_svg]:text-white',
+  ),
+  rejected: row(
+    'bg-[#e06666]',
+    'group-hover:bg-[#cc4125]',
+    'text-white',
+    '[&_a]:text-white [&_svg]:text-white',
+  ),
 };
 
 export const STATUS_LABELS: Record<AppStatus, string> = {
-  saved: 'Saved',
   applied: 'Applied',
   oa: 'OA',
   interview: 'Interview',
   offer: 'Offer',
-  rejected: 'Rejected',
   ghosted: 'Ghosted',
-  withdrawn: 'Withdrawn',
+  rejected: 'Rejected',
 };
 
 export const TIER_LABELS = {

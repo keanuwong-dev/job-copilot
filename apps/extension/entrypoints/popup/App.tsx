@@ -1,99 +1,65 @@
-import { useEffect, useState } from 'react';
-import type { LookupApplication } from '../../src/api';
+import { useState } from 'react';
 
-type Status = {
-  platform: string | null;
-  applied: LookupApplication | null;
-  error: string | null;
-  trackerUrl: string;
-};
+type Notice = { tone: 'muted' | 'error'; text: string } | null;
 
 export default function App() {
-  const [status, setStatus] = useState<Status>({
-    platform: null,
-    applied: null,
-    error: null,
-    trackerUrl: 'http://localhost:3000',
-  });
-
-  useEffect(() => {
-    void inspect().then(setStatus);
-  }, []);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
 
   return (
     <main>
       <h1>Job Tracker</h1>
-      <p>
-        {status.platform
-          ? `Detected ${status.platform}`
-          : 'Autofill uses label matching on this page. LinkedIn and Indeed stay blocked.'}
-      </p>
-      {status.applied ? (
-        <p>
-          Already applied on {(status.applied.applied_at ?? '').slice(0, 10) || 'a previous date'}.
-        </p>
-      ) : (
-        <p>No logged application for this page.</p>
-      )}
-      {status.error ? <p>{status.error}</p> : null}
-      <button type="button" onClick={() => void send('autofill', setStatus)}>
-        Autofill this page
+      <p>Fills this page from your profile. You still submit it.</p>
+      <button type="button" disabled={busy} onClick={() => void run('autofill', setBusy, setNotice)}>
+        {busy ? 'Filling…' : 'Autofill this page'}
       </button>
-      <button type="button" onClick={() => void send('open-log', setStatus)}>
+      <button
+        type="button"
+        className="secondary"
+        disabled={busy}
+        onClick={() => void run('open-log', setBusy, setNotice)}
+      >
         Log application
       </button>
-      <p>
-        <a href={status.trackerUrl} target="_blank" rel="noreferrer">
-          Open tracker
-        </a>
-      </p>
+      {notice ? <p className={notice.tone === 'error' ? 'error' : undefined}>{notice.text}</p> : null}
     </main>
   );
 }
 
-async function inspect(): Promise<Status> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  const bundle = (await browser.runtime.sendMessage({ type: 'bundle' })) as {
-    settings?: { trackerUrl?: string };
-  };
-  const trackerUrl = bundle?.settings?.trackerUrl || 'http://localhost:3000';
-  if (tab?.id == null || !tab.url) {
-    return { platform: null, applied: null, error: null, trackerUrl };
-  }
-  let platform: string | null = null;
-  try {
-    const status = (await browser.tabs.sendMessage(tab.id, { type: 'status' })) as {
-      platform?: string;
-    };
-    platform = status?.platform ?? null;
-  } catch {
-    platform = null;
-  }
-  const lookup = (await browser.runtime.sendMessage({ type: 'lookup', url: tab.url })) as {
-    ok?: boolean;
-    application?: LookupApplication | null;
-    error?: string;
-  };
-  return {
-    platform,
-    applied: lookup?.application ?? null,
-    error: lookup?.ok ? null : (lookup?.error ?? null),
-    trackerUrl,
-  };
-}
-
-async function send(
+async function run(
   type: 'autofill' | 'open-log',
-  setStatus: (update: (current: Status) => Status) => void,
+  setBusy: (busy: boolean) => void,
+  setNotice: (notice: Notice) => void,
 ) {
-  setStatus((current) => ({ ...current, error: null }));
-  const result = (await browser.runtime.sendMessage({
-    type: type === 'autofill' ? 'autofill-active' : 'open-log-active',
-  })) as { ok?: boolean; error?: string };
-  if (!result?.ok) {
-    setStatus((current) => ({
-      ...current,
-      error: result?.error ?? 'Could not autofill this page',
-    }));
+  setBusy(true);
+  setNotice(null);
+  try {
+    const result = (await browser.runtime.sendMessage({
+      type: type === 'autofill' ? 'autofill-active' : 'open-log-active',
+    })) as { ok?: boolean; error?: string; filled?: number; attention?: number };
+    if (!result?.ok) {
+      setNotice({ tone: 'error', text: result?.error ?? 'Could not autofill this page' });
+      return;
+    }
+    if (type === 'autofill') {
+      const filled = result.filled ?? 0;
+      const attention = result.attention ?? 0;
+      setNotice({
+        tone: 'muted',
+        text:
+          filled === 0
+            ? 'No matching fields on this page.'
+            : `Filled ${filled} field${filled === 1 ? '' : 's'}${attention ? `, ${attention} left for you` : ''}.`,
+      });
+    } else {
+      setNotice({ tone: 'muted', text: 'Log this job from the panel on the page.' });
+    }
+  } catch (error) {
+    setNotice({
+      tone: 'error',
+      text: error instanceof Error ? error.message : 'Could not autofill this page',
+    });
+  } finally {
+    setBusy(false);
   }
 }

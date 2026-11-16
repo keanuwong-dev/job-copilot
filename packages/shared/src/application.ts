@@ -35,7 +35,7 @@ export function applicationStats(
   applications: readonly ApplicationStatInput[],
   now = new Date(),
 ): ApplicationStats {
-  const applied = applications.filter((item) => item.status !== 'saved');
+  const applied = applications;
   const weekStart = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const appliedThisWeek = applied.filter((item) => {
     const stamp = Date.parse(item.applied_at ?? item.created_at);
@@ -161,7 +161,7 @@ export function buildApplicationInsert(
     platform: input.platform,
     location: input.location,
     status,
-    applied_at: input.applied_at ?? (status === 'saved' ? null : now.toISOString()),
+    applied_at: input.applied_at ?? now.toISOString(),
     salary_range: input.salary_range,
     notes: input.notes,
     tier: input.tier,

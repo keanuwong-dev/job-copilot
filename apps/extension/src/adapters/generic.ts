@@ -10,8 +10,7 @@ export const genericAdapter: PlatformAdapter = {
     return jobFromTitle(doc.title);
   },
   findFields(doc: Document): DetectedField[] {
-    if (!doc.querySelector('form')) return [];
-    return detectFields(doc).filter((field) => field.kind !== 'combobox');
+    return detectFields(doc, { root: doc.body ?? doc }).filter((field) => field.kind !== 'combobox');
   },
   fill(fields: DetectedField[], input: FillInput): Promise<FillReport> {
     return fillDetected(fields, input);

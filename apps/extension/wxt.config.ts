@@ -12,7 +12,11 @@ export default defineConfig({
     name: 'Job Application Autofill',
     description: 'Fill employer application forms from your profile. Never submits.',
     permissions: ['storage', 'tabs', 'activeTab', 'scripting'],
-    host_permissions: ['http://localhost:3000/*', 'http://127.0.0.1:3000/*'],
+    host_permissions: [
+      'http://localhost:3000/*',
+      'http://127.0.0.1:3000/*',
+      'https://job-application-tracker-umber-two.vercel.app/*',
+    ],
     commands: {
       autofill: {
         description: 'Autofill the application on this page',
